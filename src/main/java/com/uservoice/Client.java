@@ -2,9 +2,6 @@ package com.uservoice;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import net.sf.json.JSONObject;
-
 import org.scribe.builder.ServiceBuilder;
 import org.scribe.model.OAuthConstants;
 import org.scribe.model.OAuthRequest;
@@ -13,6 +10,10 @@ import org.scribe.model.Token;
 import org.scribe.model.Verb;
 import org.scribe.model.Verifier;
 import org.scribe.oauth.OAuthService;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class Client {
 
@@ -83,14 +84,14 @@ public class Client {
      * @throws APIError
      */
     @SuppressWarnings("serial")
-    public Client loginAsOwner() throws APIError {
+    public Client loginAsOwner() throws APIError, JSONException {
         requestToken = service.getRequestToken();
         JSONObject token = post("/api/v1/users/login_as_owner", new HashMap<String, Object>() {
             {
                 put("request_token", requestToken.getToken());
             }
         });
-        if (token != null && !token.getJSONObject("token").isNullObject()) {
+        if (token != null && !(token.getJSONObject("token")==null)) {
             return loginWithAccessToken(token.getJSONObject("token").getString("oauth_token"),
                     token.getJSONObject("token").getString("oauth_token_secret"));
         } else {
@@ -107,7 +108,7 @@ public class Client {
      * @throws APIError
      */
     @SuppressWarnings({ "serial" })
-    public Client loginAs(final String email) throws APIError {
+    public Client loginAs(final String email) throws APIError, JSONException {
         requestToken = service.getRequestToken();
         JSONObject token = post("/api/v1/users/login_as", new HashMap<String, Object>() {
             {
@@ -119,7 +120,7 @@ public class Client {
                 });
             }
         });
-        if (token != null && !token.getJSONObject("token").isNullObject()) {
+        if (token != null && !(token.getJSONObject("token")==null)) {
             return loginWithAccessToken(token.getJSONObject("token").getString("oauth_token"),
                     token.getJSONObject("token").getString("oauth_token_secret"));
         } else {
@@ -127,18 +128,21 @@ public class Client {
         }
     }
 
-    public JSONObject request(Verb method, String path, Map<String, Object> params) throws APIError {
+    public JSONObject request(Verb method, String path, Map<String, Object> params)
+        throws APIError, JSONException {
         OAuthRequest request = new OAuthRequest(method, serverLocation + path);
         request.addHeader("Content-Type", "application/json");
         request.addHeader("API-Client", "uservoice-java-${project.version}");
         request.addHeader("Accept", "application/json");
         if (params != null) {
-            request.addPayload(JSONObject.fromObject(params).toString());
+            request.addPayload(new JSONObject(params).toString());
         }
+
         service.signRequest(token, request);
         Response response = request.send();
-        JSONObject result = JSONObject.fromObject(response.getBody());
-        if (result != null && !result.getJSONObject("errors").isNullObject()) {
+
+        JSONObject result = new JSONObject(response.getBody());
+        if (result != null && !(result.getJSONObject("errors")==null)) {
             String errorType = result.getJSONObject("errors").getString("type");
             if ("unauthorized".equals(errorType)) {
                 throw new Unauthorized(result.getJSONObject("errors").getString("message"));
@@ -177,7 +181,7 @@ public class Client {
      * @throws APIError
      *             If an error occurs.
      */
-    public JSONObject get(String path) throws APIError {
+    public JSONObject get(String path) throws APIError, JSONException {
         return request(Verb.GET, path, null);
     }
 
@@ -190,7 +194,7 @@ public class Client {
      * @throws APIError
      *             If an error occurs.
      */
-    public JSONObject delete(String path) throws APIError {
+    public JSONObject delete(String path) throws APIError, JSONException {
         return request(Verb.DELETE, path, null);
     }
 
@@ -205,7 +209,7 @@ public class Client {
      * @throws APIError
      *             If an error occurs.
      */
-    public JSONObject post(String path, Map<String, Object> params) throws APIError {
+    public JSONObject post(String path, Map<String, Object> params) throws APIError, JSONException {
         return request(Verb.POST, path, params);
     }
 
@@ -220,7 +224,7 @@ public class Client {
      * @throws APIError
      *             If an error occurs.
      */
-    public JSONObject put(String path, Map<String, Object> params) throws APIError {
+    public JSONObject put(String path, Map<String, Object> params) throws APIError, JSONException {
         return request(Verb.PUT, path, params);
     }
 

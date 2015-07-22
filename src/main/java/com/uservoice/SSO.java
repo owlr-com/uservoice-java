@@ -1,5 +1,6 @@
 package com.uservoice;
 
+import android.util.Log;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.security.InvalidAlgorithmParameterException;
@@ -10,18 +11,16 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.TimeZone;
-
 import javax.crypto.Cipher;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-
-import net.sf.json.JSONObject;
-
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.codec.net.URLCodec;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class SSO {
     private static final DateFormat dateFormat;
@@ -41,13 +40,18 @@ public class SSO {
         URLCodec urlCodec = new URLCodec("ASCII");
         Base64 base64 = new Base64();
 
-        JSONObject jsonObj = new JSONObject();
-        jsonObj.putAll(user);
+        JSONObject jsonObj = new JSONObject(user);
+
+        Log.e("JSON ATTEMPT 1: ",""+jsonObj.toString());
 
         if (!jsonObj.has("expires")) {
             Calendar expirationTime = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
             expirationTime.setTimeInMillis(expirationTime.getTimeInMillis() + validForSeconds * 1000);
-            jsonObj.put("expires", dateFormat.format(expirationTime.getTime()));
+            try {
+                jsonObj.put("expires", dateFormat.format(expirationTime.getTime()));
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
         byte[] data = jsonObj.toString().getBytes();
 

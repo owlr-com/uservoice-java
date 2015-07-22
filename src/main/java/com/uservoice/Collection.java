@@ -3,9 +3,9 @@ package com.uservoice;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class Collection implements Iterable<JSONObject> {
     public static final int PER_PAGE = 100;
@@ -29,7 +29,7 @@ public class Collection implements Iterable<JSONObject> {
         this(client, path, Integer.MAX_VALUE);
     }
 
-    public int size() {
+    public int size() throws JSONException {
         if (responseData == null) {
             try {
                 get(0);
@@ -40,7 +40,7 @@ public class Collection implements Iterable<JSONObject> {
         return Math.min(responseData.getInt("total_records"), limit);
     }
 
-    public JSONObject get(int i) {
+    public JSONObject get(int i) throws JSONException {
         if (i == 0 || (i > 0 && i < size())) {
             return loadPage((int) (i / (float) (PER_PAGE)) + 1).getJSONObject(i % PER_PAGE);
         } else {
@@ -60,7 +60,7 @@ public class Collection implements Iterable<JSONObject> {
      * @throws Unauthorized
      *             if the user didn't have permissions to request the page
      */
-    public synchronized JSONArray loadPage(int i) {
+    public synchronized JSONArray loadPage(int i) throws JSONException {
         if (pages == null || pages.get(i) == null) {
             String url;
             if (path.contains("?")) {
@@ -71,9 +71,11 @@ public class Collection implements Iterable<JSONObject> {
             //System.out.println(url);
             JSONObject result = client.get(url + "per_page=" + perPage + "&page=" + i);
             //System.out.println(result);
-            if (result != null && result.names().size() == 2 && !result.getJSONObject("response_data").isNullObject()) {
+            if (result != null && result.names().length() == 2 && !(result.getJSONObject("response_data")==null)) {
                 responseData = result.getJSONObject("response_data");
-                for (Object name : result.names()) {
+                JSONArray names = result.names();
+                for (int j = 0; j < names.length(); j++) {
+                    Object name = names.get(i);
                     if (!"response_data".equals(name)) {
                         pages.put(i, result.getJSONArray(name.toString()));
                     }
@@ -86,7 +88,7 @@ public class Collection implements Iterable<JSONObject> {
         return pages.get(i);
     }
 
-    public boolean isEmpty() throws APIError {
+    public boolean isEmpty() throws APIError, JSONException {
         return size() == 0;
     }
 
@@ -95,11 +97,20 @@ public class Collection implements Iterable<JSONObject> {
             int current = 0;
 
             public boolean hasNext() {
-                return current < size();
+                try {
+                    return current < size();
+                } catch (JSONException e) {
+                    return false;
+                }
             }
 
             public JSONObject next() {
-                return get(current++);
+                try {
+                    return get(current++);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    return null;
+                }
             }
 
             public void remove() {
@@ -108,7 +119,7 @@ public class Collection implements Iterable<JSONObject> {
         };
     }
 
-    public JSONObject[] toArray() {
+    public JSONObject[] toArray() throws JSONException {
         int arraySize = size();
         JSONObject[] array = new JSONObject[arraySize];
         for (int i = 0; i < arraySize; i++) {
