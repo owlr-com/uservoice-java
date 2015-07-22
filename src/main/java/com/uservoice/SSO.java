@@ -1,6 +1,5 @@
 package com.uservoice;
 
-import android.util.Log;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.security.InvalidAlgorithmParameterException;
@@ -41,8 +40,6 @@ public class SSO {
         Base64 base64 = new Base64();
 
         JSONObject jsonObj = new JSONObject(user);
-
-        Log.e("JSON ATTEMPT 1: ",""+jsonObj.toString());
 
         if (!jsonObj.has("expires")) {
             Calendar expirationTime = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
